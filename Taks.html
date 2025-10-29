@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المستكشف التفاعلي للطقوس الكنسية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chosen Palette: Calm Scholarly (Gray, White, Indigo Accent) -->
+    <!-- Application Structure Plan: A tab-based SPA structure was designed with four main sections: Home, Vestments, Liturgies, and Prayer Structure. This thematic grouping is more intuitive for learning than the original document's linear Q&A format. The user flow is non-linear, allowing exploration. Key interactions include: (1) Main SPA navigation to swap content sections. (2) Clickable cards/tabs for Vestments and Liturgy details to focus user attention. (3) A bar chart for quantitative Liturgy comparison. (4) Nested accordions for the Q&A section to manage information density. This structure was chosen to transform a static study guide into an interactive, exploratory learning tool. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: Priestly Vestments (List) -> Goal: Inform/Explore -> Viz: Clickable Tab/Card system -> Interaction: Click name, see description -> Justification: More engaging than a static list, focuses attention. -> Method: HTML/JS (show/hide).
+        - Report Info: Liturgies (List w/ numbers) -> Goal: Compare -> Viz: Bar Chart (# of Litanies) + Clickable Cards (Details) -> Interaction: Hover chart, click cards -> Justification: Chart gives quick quantitative insight; cards provide qualitative details interactively. -> Method: Chart.js (Canvas) + HTML/JS.
+        - Report Info: Prayer Structure (Q&A) -> Goal: Organize/Inform -> Viz: Nested Accordion -> Interaction: Click section, click question -> Justification: Manages high information density, allows user to drill down without being overwhelmed. -> Method: HTML/JS (toggle).
+        - CONFIRMING NO SVG/Mermaid. All visuals are HTML/CSS or Chart.js Canvas. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .nav-btn {
+            transition: all 0.3s ease;
+        }
+        .nav-btn.active {
+            background-color: #4f46e5; 
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .interactive-tab {
+            transition: all 0.3s ease;
+            border-right: 4px solid transparent;
+        }
+        .interactive-tab.active {
+            background-color: #eef2ff; 
+            border-right-color: #4f46e5;
+            font-weight: 600;
+        }
+        .accordion-header {
+            transition: background-color 0.2s ease;
+        }
+        .accordion-header:hover {
+            background-color: #f9fafb;
+        }
+        .qa-question {
+            transition: background-color 0.2s ease;
+        }
+        .qa-question:hover {
+            background-color: #fafafa;
+        }
+        .qa-answer {
+            transition: max-height 0.3s ease-out;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-indigo-700 mb-2">المستكشف التفاعلي للطقوس الكنسية</h1>
+            <p class="text-lg text-gray-600">أداة مبسطة لاستعراض ودراسة مادة الطقس</p>
+        </header>
+
+        <nav class="flex justify-center gap-2 md:gap-4 mb-8 flex-wrap">
+            <button class="nav-btn active text-sm md:text-base font-semibold py-2 px-4 rounded-full bg-white text-indigo-700 shadow-sm" data-target="home">الرئيسية</button>
+            <button class="nav-btn text-sm md:text-base font-semibold py-2 px-4 rounded-full bg-white text-indigo-700 shadow-sm" data-target="vestments">الملابس الكهنوتية</button>
+            <button class="nav-btn text-sm md:text-base font-semibold py-2 px-4 rounded-full bg-white text-indigo-700 shadow-sm" data-target="liturgies">القداسات الإلهية</button>
+            <button class="nav-btn text-sm md:text-base font-semibold py-2 px-4 rounded-full bg-white text-indigo-700 shadow-sm" data-target="structure">بنية الصلوات</button>
+        </nav>
+
+        <main>
+            <section id="home" class="page-content bg-white p-6 md:p-8 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-bold text-indigo-600 mb-4">مرحباً بك!</h2>
+                <p class="text-gray-700 leading-relaxed">
+                    تم تصميم هذا التطبيق التفاعلي لمساعدتك على استكشاف وفهم الجوانب المختلفة للطقوس الكنسية المذكورة في المستندات. بدلاً من قراءة نصوص جامدة، يمكنك هنا التفاعل مع المحتوى بطريقة منظمة وسهلة.
+                </p>
+                <p class="text-gray-700 leading-relaxed mt-4">
+                    استخدم أزرار التنقل أعلاه للانتقال بين الأقسام الرئيسية:
+                </p>
+                <ul class="list-disc list-inside mt-4 space-y-2 text-gray-700">
+                    <li><strong>الملابس الكهنوتية:</strong> اضغط على اسم كل رداء لعرض شرحه التفصيلي.</li>
+                    <li><strong>القداسات الإلهية:</strong> قارن بين القداسات الثلاثة الرئيسية، واطلع على رسم بياني يوضح الفروقات في عدد الأواشي.</li>
+                    <li><strong>بنية الصلوات:</strong> تصفح الأسئلة والأجوبة الشائعة حول رفع بخور عشية وباكر، وقداس الموعوظين، وقداس المؤمنين.</li>
+                </ul>
+            </section>
+
+            <section id="vestments" class="page-content hidden bg-white p-6 md:p-8 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-bold text-indigo-600 mb-4">الملابس الكهنوتية</h2>
+                <p class="text-gray-700 leading-relaxed mb-6">
+                    تتميز خدمة الكهنوت بملابس خاصة لها معانيها الروحية العميقة. اضغط على اسم الرداء في القائمة لاستعراض الشرح الخاص به.
+                </p>
+                <div class="md:flex gap-8">
+                    <div class="md:w-1/3 mb-6 md:mb-0">
+                        <ul class="space-y-2">
+                            <li><button class="interactive-tab active w-full text-right p-3 rounded-md vestment-btn" data-target="tonia-content">1. التونية</button></li>
+                            <li><button class="interactive-tab w-full text-right p-3 rounded-md vestment-btn" data-target="sadra-content">2. الصدرة</button></li>
+                            <li><button class="interactive-tab w-full text-right p-3 rounded-md vestment-btn" data-target="bornos-content">3. البرنس</button></li>
+                            <li><button class="interactive-tab w-full text-right p-3 rounded-md vestment-btn" data-target="taylasana-content">4. الطيلسانة</button></li>
+                            <li><button class="interactive-tab w-full text-right p-3 rounded-md vestment-btn" data-target="shamla-content">5. الشاملة</button></li>
+                        </ul>
+                    </div>
+                    <div class="md:w-2/3 bg-gray-50 p-6 rounded-lg min-h-[200px]">
+                        <div id="tonia-content" class="vestment-info">
+                            <h3 class="text-xl font-semibold text-indigo-700 mb-3">التونية</h3>
+                            <p class="text-gray-700">لونها أبيض ترمز إلى النقاء، كما تشير إلى النعمة التي تحيط بالكاهن. مكرسة ومخصصة للأسرار المقدسة ولا تستخدم إلا في تقديم الذبيحة.</p>
+                        </div>
+                        <div id="sadra-content" class="vestment-info hidden">
+                            <h3 class="text-xl font-semibold text-indigo-700 mb-3">الصدرة</h3>
+                            <p class="text-gray-700">تكون من العنق للقدمين كصدرة هارون الكاهن. منها لونين أسود وأبيض، يستخدم كل لون حسب المناسبة. الله أوصى موسى ليلبسها لهارون.</p>
+                        </div>
+                        <div id="bornos-content" class="vestment-info hidden">
+                            <h3 class="text-xl font-semibold text-indigo-700 mb-3">البرنس</h3>
+                            <p class="text-gray-700">رداء متسع مستدير بدون أكمام يماثل ملابس الملك، لأن الكاهن يمثل المسيح الملك وقت القداس. اتساع البرنس يشير إلى عناية الله بالكاهن.</p>
+                        </div>
+                        <div id="taylasana-content" class="vestment-info hidden">
+                            <h3 class="text-xl font-semibold text-indigo-700 mb-3">الطيلسانة</h3>
+                            <p class="text-gray-700">يضعها الكاهن فوق رأسه تشير إلى أسلحة الخلاص.</p>
+                        </div>
+                        <div id="shamla-content" class="vestment-info hidden">
+                            <h3 class="text-xl font-semibold text-indigo-700 mb-3">الشاملة</h3>
+                            <p class="text-gray-700">كان الكهنة يلبسونها قديماً وتمثل البرقع الذي كان يضعه موسى وهو يستلم لوحي الشريعة.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="liturgies" class="page-content hidden bg-white p-6 md:p-8 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-bold text-indigo-600 mb-4">القداسات الإلهية</h2>
+                <p class="text-gray-700 leading-relaxed mb-6">
+                    تستخدم الكنيسة القبطية حالياً ثلاثة قداسات رئيسية. يعرض هذا القسم مقارنة سريعة بينها، بما في ذلك رسم بياني لعدد الأواشي في كل قداس، وتفاصيل كل قداس عند الضغط على اسمه.
+                </p>
+                <div class="grid md:grid-cols-2 gap-8 items-start">
+                    <div class="bg-gray-50 p-6 rounded-lg">
+                        <h3 class="text-xl font-semibold text-indigo-700 mb-4 text-center">مقارنة عدد الأواشي</h3>
+                        <div class="chart-container">
+                            <canvas id="liturgyChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-lg">
+                        <h3 class="text-xl font-semibold text-indigo-700 mb-4 text-center">اختر قداساً لعرض تفاصيله</h3>
+                        <ul class="space-y-2 mb-4">
+                            <li><button class="interactive-tab active w-full text-right p-3 rounded-md liturgy-btn" data-target="basilian-content">1. القداس الباسيلي</button></li>
+                            <li><button class="interactive-tab w-full text-right p-3 rounded-md liturgy-btn" data-target="gregorian-content">2. القداس الاغريغوري</button></li>
+                            <li><button class="interactive-tab w-full text-right p-3 rounded-md liturgy-btn" data-target="cyril-content">3. القداس الكيرلسي</button></li>
+                        </ul>
+                        <div class="bg-white p-4 rounded-lg min-h-[150px]">
+                            <div id="basilian-content" class="liturgy-info">
+                                <h4 class="text-lg font-semibold text-indigo-700">القداس الباسيلي</h4>
+                                <p class="text-gray-700 mt-2">للقديس باسليوس الكبير أسقف قيصرية الكبادوك. كتبه باليونانية ويعتبر القداس المختصر لقداس يعقوب الرسول. يخاطب الله الآب وبه سبع أواشي.</p>
+                            </div>
+                            <div id="gregorian-content" class="liturgy-info hidden">
+                                <h4 class="text-lg font-semibold text-indigo-700">القداس الاغريغوري</h4>
+                                <p class="text-gray-700 mt-2">للقديس أغريغوريوس الناطق بالإلهيات أسقف القسطنطينية. كتبه باليونانية ويخاطب أقنوم الابن. به 10 أواشي.</p>
+                            </div>
+                            <div id="cyril-content" class="liturgy-info hidden">
+                                <h4 class="text-lg font-semibold text-indigo-700">القداس الكيرلسي</h4>
+                                <p class="text-gray-700 mt-2">وضعه مارمرقس باللغة اليونانية في الستينيات من القرن الأول ويخاطب أقنوم الروح القدس. دونه البابا أثناسيوس 330م وتُرجم للقبطية في القرن العاشر. به 17 أوشية.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="structure" class="page-content hidden bg-white p-6 md:p-8 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-bold text-indigo-600 mb-4">بنية الصلوات (سؤال وجواب)</h2>
+                <p class="text-gray-700 leading-relaxed mb-6">
+                    يتكون هذا القسم من مجموعة أسئلة وأجوبة مقتبسة من المستندات، وهو منظم في أقسام يمكنك تصفحها. اضغط على عنوان القسم لفتح قائمة الأسئلة، ثم اضغط على السؤال لإظهار الإجابة.
+                </p>
+                <div class="space-y-4">
+                    
+                    <div class="accordion-group border rounded-lg overflow-hidden">
+                        <h3>
+                            <button class="accordion-header w-full text-right p-4 bg-gray-50 font-semibold text-lg text-indigo-700 flex justify-between items-center">
+                                <span>الفصل الأول: رفع بخور عشية وباكر</span>
+                                <span class="text-xl transform transition-transform duration-200">+</span>
+                            </button>
+                        </h3>
+                        <div class="accordion-content hidden bg-white border-t">
+                            <div class="qa-item border-b">
+                                <button class="qa-question w-full text-right p-4 font-medium flex justify-between items-center">
+                                    <span>س 1: ما معنى رفع بخور عشية وباكر؟</span>
+                                    <span class="text-lg transform transition-transform duration-200">+</span>
+                                </button>
+                                <div class="qa-answer hidden bg-gray-50 p-4 text-gray-700">
+                                    <p>ج: هو صلاة تقام مساءً أو صباحًا يُرفع فيها بخور أمام الله، كرمز للصلاة الصاعدة إلى السماء.</p>
+                                </div>
+                            </div>
+                            <div class="qa-item border-b">
+                                <button class="qa-question w-full text-right p-4 font-medium flex justify-between items-center">
+                                    <span>س 2: ما الغرض من رفع بخور عشية؟</span>
+                                    <span class="text-lg transform transition-transform duration-200">+</span>
+                                </button>
+                                <div class="qa-answer hidden bg-gray-50 p-4 text-gray-700">
+                                    <p>ج: تمجيد الله وشكره على حفظ اليوم، والاستعداد الروحي للقداس الإلهي في اليوم التالي.</p>
+                                </div>
+                            </div>
+                            <div class="qa-item border-b">
+                                <button class="qa-question w-full text-right p-4 font-medium flex justify-between items-center">
+                                    <span>س 3: ما الغرض من رفع بخور باكر؟</span>
+                                    <span class="text-lg transform transition-transform duration-200">+</span>
+                                </button>
+                                <div class="qa-answer hidden bg-gray-50 p-4 text-gray-700">
+                                    <p>ج: تقديم الشكر الله على بداية يوم جديد، وطلب بركته على اليوم كله.</p>
+                                </div>
+                            </div>
+                             <div class="qa-item border-b">
+                                <button class="qa-question w-full text-right p-4 font-medium flex justify-between items-center">
+                                    <span>س 4: لماذا يرفع البخور أمام الأيقونات؟</span>
+                                    <span class="text-lg transform transition-transform duration-200">+</span>
+                                </button>
+                                <div class="qa-answer hidden bg-gray-50 p-4 text-gray-700">
+                                    <p>ج: لتكريم القديسين الذين تمثلهم الأيقونات وطلب شفاعتهم.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-group border rounded-lg overflow-hidden">
+                        <h3>
+                            <button class="accordion-header w-full text-right p-4 bg-gray-50 font-semibold text-lg text-indigo-700 flex justify-between items-center">
+                                <span>الفصل الثاني: قداس الموعوظين</span>
+                                <span class="text-xl transform transition-transform duration-200">+</span>
+                            </button>
+                        </h3>
+                        <div class="accordion-content hidden bg-white border-t">
+                            <div class="qa-item border-b">
+                                <button class="qa-question w-full text-right p-4 font-medium flex justify-between items-center">
+                                    <span>س 1: ما هو أول جزء في قداس الموعوظين؟</span>
+                                    <span class="text-lg transform transition-transform duration-200">+</span>
+                                </button>
+                                <div class="qa-answer hidden bg-gray-50 p-4 text-gray-700">
+                                    <p>ج: قراءة البولس (رسائل بولس الرسول).</p>
+                                </div>
+                            </div>
+                            <div class="qa-item border-b">
+                                <button class="qa-question w-full text-right p-4 font-medium flex justify-between items-center">
+                                    <span>س 2: ماذا يقرأ بعد البولس؟</span>
+                                    <span class="text-lg transform transition-transform duration-200">+</span>
+                                </button>
+                                <div class="qa-answer hidden bg-gray-50 p-4 text-gray-700">
+                                    <p>ج: الكاثوليكون (الرسائل الجامعة).</p>
+                                </div>
+                            </div>
+                            <div class="qa-item border-b">
+                                <button class="qa-question w-full text-right p-4 font-medium flex justify-between items-center">
+                                    <span>س 3: ماذا يقرأ بعد الكاثوليكون؟</span>
+                                    <span class="text-lg transform transition-transform duration-200">+</span>
+                                </button>
+                                <div class="qa-answer hidden bg-gray-50 p-4 text-gray-700">
+                                    <p>ج: الإبركسيس (أعمال الرسل).</p>
+                                </div>
+                            </div>
+                            <div class="qa-item border-b">
+                                <button class="qa-question w-full text-right p-4 font-medium flex justify-between items-center">
+                                    <span>س 4: ماذا يقرأ بعد الإبركسيس؟</span>
+                                    <span class="text-lg transform transition-transform duration-200">+</span>
+                                </button>
+                                <div class="qa-answer hidden bg-gray-50 p-4 text-gray-700">
+                                    <p>ج: السنكسار (سير القديسين).</p>
+                                </div>
+                            </div>
+                            <div class="qa-item border-b">
+                                <button class="qa-question w-full text-right p-4 font-medium flex justify-between items-center">
+                                    <span>س 5: ما هو آخر جزء في قداس الموعوظين؟</span>
+                                    <span class="text-lg transform transition-transform duration-200">+</span>
+                                </button>
+                                <div class="qa-answer hidden bg-gray-50 p-4 text-gray-700">
+                                    <p>ج: الإنجيل والعظة.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-group border rounded-lg overflow-hidden">
+                        <h3>
+                            <button class="accordion-header w-full text-right p-4 bg-gray-50 font-semibold text-lg text-indigo-700 flex justify-between items-center">
+                                <span>الفصل الثالث: قداس المؤمنين</span>
+                                <span class="text-xl transform transition-transform duration-200">+</span>
+                            </button>
+                        </h3>
+                        <div class="accordion-content hidden bg-white border-t">
+                            <div class="qa-item border-b">
+                                <button class="qa-question w-full text-right p-4 font-medium flex justify-between items-center">
+                                    <span>س 1: لماذا سمي بـ "قداس المؤمنين"؟</span>
+                                    <span class="text-lg transform transition-transform duration-200">+</span>
+                                </button>
+                                <div class="qa-answer hidden bg-gray-50 p-4 text-gray-700">
+                                    <p>ج: لأن الموعوظين كانوا يخرجون بعد قراءة الإنجيل، ويبقى المؤمنون فقط لإتمام الذبيحة الإلهية.</p>
+                                </div>
+                            </div>
+                            <div class="qa-item border-b">
+                                <button class="qa-question w-full text-right p-4 font-medium flex justify-between items-center">
+                                    <span>س 2: ما أول صلاة في قداس المؤمنين؟</span>
+                                    <span class="text-lg transform transition-transform duration-200">+</span>
+                                </button>
+                                <div class="qa-answer hidden bg-gray-50 p-4 text-gray-700">
+                                    <p>ج: صلاة الصلح، التي تعبر عن مصالحة الإنسان مع الله ومع إخوته قبل التناول.</p>
+                                </div>
+                            </div>
+                            <div class="qa-item border-b">
+                                <button class="qa-question w-full text-right p-4 font-medium flex justify-between items-center">
+                                    <span>س 3: ما هو قانون الإيمان في القداس؟</span>
+                                    <span class="text-lg transform transition-transform duration-200">+</span>
+                                </button>
+                                <div class="qa-answer hidden bg-gray-50 p-4 text-gray-700">
+                                    <p>ج: هو إعلان إيمان الكنيسة المستقيم الذي يتلى قبل التقديس.</p>
+                                </div>
+                            </div>
+                            <div class="qa-item border-b">
+                                <button class="qa-question w-full text-right p-4 font-medium flex justify-between items-center">
+                                    <span>س 4: ما معنى كلمة "أنافورا"؟</span>
+                                    <span class="text-lg transform transition-transform duration-200">+</span>
+                                </button>
+                                <div class="qa-answer hidden bg-gray-50 p-4 text-gray-700">
+                                    <p>ج: تعني باليونانية "الرفع"، أي رفع القلب والفكر إلى الله أثناء الصلاة.</p>
+                                </div>
+                            </div>
+                            <div class="qa-item border-b">
+                                <button class="qa-question w-full text-right p-4 font-medium flex justify-between items-center">
+                                    <span>س 5: ما هو أهم جزء في قداس المؤمنين؟</span>
+                                    <span class="text-lg transform transition-transform duration-200">+</span>
+                                </button>
+                                <div class="qa-answer hidden bg-gray-50 p-4 text-gray-700">
+                                    <p>ج: هو لحظة الاستحالة (Epiclesis)، حين يتحول الخبز والخمر إلى جسد ودم المسيح الحقيقيين بفعل الروح القدس.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+        
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>تم إنشاء هذا التطبيق التفاعلي بناءً على المستندات المقدمة.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const navButtons = document.querySelectorAll('.nav-btn');
+            const pages = document.querySelectorAll('.page-content');
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    navButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    const targetPageId = button.dataset.target;
+                    pages.forEach(page => {
+                        if (page.id === targetPageId) {
+                            page.classList.remove('hidden');
+                        } else {
+                            page.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+            function setupInteractiveTabs(btnClass, contentClass, activeBtnClass) {
+                const buttons = document.querySelectorAll(btnClass);
+                const contents = document.querySelectorAll(contentClass);
+                const activeClass = activeBtnClass || 'active';
+
+                buttons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        buttons.forEach(btn => btn.classList.remove(activeClass));
+                        button.classList.add(activeClass);
+
+                        const targetContentId = button.dataset.target;
+                        contents.forEach(content => {
+                            if (content.id === targetContentId) {
+                                content.classList.remove('hidden');
+                            } else {
+                                content.classList.add('hidden');
+                            }
+                        });
+                    });
+                });
+            }
+
+            setupInteractiveTabs('.vestment-btn', '.vestment-info', 'active');
+            setupInteractiveTabs('.liturgy-btn', '.liturgy-info', 'active');
+
+            const accordionHeaders = document.querySelectorAll('.accordion-header');
+            accordionHeaders.forEach(header => {
+                header.addEventListener('click', () => {
+                    const content = header.parentElement.nextElementSibling;
+                    content.classList.toggle('hidden');
+                    const icon = header.querySelector('span:last-child');
+                    icon.textContent = content.classList.contains('hidden') ? '+' : '−';
+                });
+            });
+
+            const qaQuestions = document.querySelectorAll('.qa-question');
+            qaQuestions.forEach(question => {
+                question.addEventListener('click', () => {
+                    const answer = question.nextElementSibling;
+                    answer.classList.toggle('hidden');
+                    const icon = question.querySelector('span:last-child');
+                    icon.textContent = answer.classList.contains('hidden') ? '+' : '−';
+                });
+            });
+
+            if (document.getElementById('liturgyChart')) {
+                const ctx = document.getElementById('liturgyChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['القداس الباسيلي', 'القداس الاغريغوري', 'القداس الكيرلسي'],
+                        datasets: [{
+                            label: 'عدد الأواشي',
+                            data: [7, 10, 17],
+                            backgroundColor: [
+                                'rgba(79, 70, 229, 0.6)', 
+                                'rgba(59, 130, 246, 0.6)', 
+                                'rgba(16, 185, 129, 0.6)' 
+                            ],
+                            borderColor: [
+                                'rgba(79, 70, 229, 1)',
+                                'rgba(59, 130, 246, 1)',
+                                'rgba(16, 185, 129, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'عدد الأواشي'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.raw}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
